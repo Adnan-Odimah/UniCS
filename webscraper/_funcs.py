@@ -5,6 +5,7 @@ import re
 import sys
 import json
 import threading as th
+from more_itertools import minmax
 
 BASE_URL = "https://scrapemequickly.com/cars/static/"
 RUN_ID = f"?scraping_run_id="
@@ -132,13 +133,16 @@ def handle_data():
     get the data that they need and send it to their server
     """
     print(data)
-    years = data["year"]
-    prices = data["price"]
-    makes = [m.lower().strip() for m in data["make"]]
+    years, prices = data["year"], data["price"]
+    makes = data["make"]
 
-    min_year = min(years)
-    max_year = max(years)
-    avg_price = sum(prices) // len(prices)
+    min_year, max_year = minmax(years)
+    total = 0
+    count = 0
+    for price in prices:
+        total += price
+        count += 1
+    avg_price = total / count
     mode_make = Counter(makes).most_common(1)[0][0]
 
     answers = {
