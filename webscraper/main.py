@@ -14,7 +14,6 @@ def main():
     SCRAPING_RUN_ID = start_scraping_run()
     thread_gen(THREAED_COUNT, END_IDX, PROXIES, SCRAPING_RUN_ID)
     data = handle_data()
-    print(data)
 
     #submit(data, SCRAPING_RUN_ID)
 

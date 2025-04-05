@@ -6,7 +6,7 @@ import sys
 import json
 import threading as th
 BASE_URL = "https://scrapemequickly.com/cars/static/"
-RUN_ID = f"?scarping_run_id="
+RUN_ID = f"?scraping_run_id="
 TEAM_ID = "3dcee599-120c-11f0-b749-0242ac120003"
 
 data = {"year": [], "price": [], "make": []}
@@ -33,30 +33,31 @@ def scrape_page(page_url: str, session: requests.Session):
         print(f"Failed to fetch {page_url}: {e}")
         return None, None, None
 
-    html = response.text
-
     # -- REGEX PATTERNS --
     # 1) Year pattern (example: "Year: 1997")
     #    We'll capture the 4-digit year in a group.
-    year_pattern = r"Year:\s*(\d{4})"
+    year_pattern = r"Year:</strong>\s*(\d{4})"
 
     # 2) Price pattern (example: "Price: $12573")
     #    We'll capture digits, ignoring the "$" sign.
-    price_pattern = r"Price:\s*\$?(\d+)"
+    price_pattern = r"Price:</strong>\s*\$?(\d+)"
 
     # 3) Make pattern (example: "Audi, A4" => we want "Audi")
     #    We'll capture the brand name before the comma.
-    make_pattern = r"([A-Za-z]+)\s*,\s*\S+"
+    make_pattern = r">([A-Za-z]+), ([A-Za-z]+)</h2>"
 
     # -- EXTRACT YEAR --
     year_str = None
     match_year = re.search(year_pattern, html)
+    #print(match_year)
     if match_year:
         year_str = int(match_year.group(1))  # e.g., "1997"
+      #  print("year", year_str)
 
     # -- EXTRACT PRICE --
     price_str = None
     match_price = re.search(price_pattern, html)
+    #print(match_price)
     if match_price:
         price_str = int(match_price.group(1))  # e.g., "12573"
 
@@ -102,13 +103,15 @@ def page_finder(start_idx: int, end_idx: int, _session, scraping_run_id):
             data["price"].append(price)
             data["make"].append(make)
         else:
-            print(f"No data found for {url}")
+           # print(year, price, make)
+            #print(f"No data found for {url}")
+            pass
 
 def thread_gen(thread_count, end_idx, proxies, scraping_run_id):
     threads = []
     split_idx = end_idx // thread_count
     for i in range(thread_count):
-        if i == 6:
+        if i > 4:
             session = requests.Session()
         else:
             proxy = proxies[i]
@@ -127,6 +130,7 @@ def handle_data():
     """
     get the data that they need and send it to their server
     """
+    print(data)
     years = data["year"]
     price = data["price"]
     make = data["make"]
