@@ -70,7 +70,6 @@ async def scrape_page(page_url: str, session: requests.Session):
 
     return year, price, make
 
-
 def start_scraping_run():
     r = requests.post(f"https://api.scrapemequickly.com/scraping-run?team_id={TEAM_ID}")
 
