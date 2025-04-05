@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from collections import Counter
+import re 
 
 def scrape_page(page_url: str, session: requests.Session):
     """
@@ -19,40 +20,45 @@ def scrape_page(page_url: str, session: requests.Session):
     # Loop through the specified range of IDs
     try:
         response = session.get(page_url)
-        response.raise_for_status()  # Raise an exception for 4xx/5xx responses
+        response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(f"Failed to fetch {page_url}: {e}")
+        return None, None, None
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    html = response.text
 
-    # --- Extract the Year ---
-    # Example: if the page has  <p>Year: 1997</p>
-    year_text = soup.find(text=lambda t: "Year:" in t)
-    if year_text:
-        # year_text might be "Year: 1997", so split on ':'
-        # Then strip() and convert to int.
-        year_str = year_text.split(":")[-1].strip()
+    # -- REGEX PATTERNS --
+    # 1) Year pattern (example: "Year: 1997")
+    #    We'll capture the 4-digit year in a group.
+    year_pattern = r"Year:\s*(\d{4})"
 
+    # 2) Price pattern (example: "Price: $12573")
+    #    We'll capture digits, ignoring the "$" sign.
+    price_pattern = r"Price:\s*\$?(\d+)"
 
-    # --- Extract the Price ---
-    # Example: <p>Price: $12573</p>
-    price_text = soup.find(text=lambda t: "Price:" in t)
-    if price_text:
-        # Might be something like "Price: $12573"
-        price_str = price_text.split(":")[-1].strip().lstrip('$')
-        
+    # 3) Make pattern (example: "Audi, A4" => we want "Audi")
+    #    We'll capture the brand name before the comma.
+    make_pattern = r"([A-Za-z]+)\s*,\s*\S+"
 
-    # --- Extract the Make ---
-    # Example: <h2>Ford, Aerostar</h2> or <p>Make: Ford</p>
-    # For demonstration, let's assume there's a line "Ford, Aerostar" 
-    # and you only want the brand name "Ford".
-    make_text = soup.find(text=lambda t: "," in t)  # e.g. "Ford, Aerostar"
-    if make_text:
-        brand_part = make_text.split(",")[0].strip()
-        
+    # -- EXTRACT YEAR --
+    year_str = None
+    match_year = re.search(year_pattern, html)
+    if match_year:
+        year_str = int(match_year.group(1))  # e.g., "1997"
 
+    # -- EXTRACT PRICE --
+    price_str = None
+    match_price = re.search(price_pattern, html)
+    if match_price:
+        price_str = int(match_price.group(1))  # e.g., "12573"
 
-    return year_str, price_str, brand_part 
+    # -- EXTRACT MAKE --
+    brand_part = None
+    match_make = re.search(make_pattern, html)
+    if match_make:
+        brand_part = match_make.group(1)  # e.g., "Audi"
+
+    return year_str, price_str, brand_part
 
 
 
