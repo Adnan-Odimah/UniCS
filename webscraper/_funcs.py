@@ -52,7 +52,7 @@ async def scrape_page(page_url: str, session: requests.Session):
     match_year = re.search(year_pattern, html)
     #print(match_year)
     if match_year:
-        year_str = int(match_year.group(1))  # e.g., "1997"
+        year = int(match_year.group(1))  # e.g., "1997"
       #  print("year", year_str)
 
     # -- EXTRACT PRICE --
@@ -60,15 +60,15 @@ async def scrape_page(page_url: str, session: requests.Session):
     match_price = re.search(price_pattern, html)
     #print(match_price)
     if match_price:
-        price_str = int(match_price.group(1))  # e.g., "12573"
+        price = int(match_price.group(1))  # e.g., "12573"
 
     # -- EXTRACT MAKE --
     brand_part = None
     match_make = re.search(make_pattern, html)
     if match_make:
-        brand_part = match_make.group(1)  # e.g., "Audi"
+        make = match_make.group(1)  # e.g., "Audi"
 
-    return year_str, price_str, brand_part
+    return year, price, make
 
 
 def start_scraping_run():
