@@ -28,7 +28,7 @@ async def write_html_to_file(page_url: str, session: aiohttp.ClientSession, file
 
 # Example usage
 async def main():
-    url = "https://scrapemequickly.com/all_cars?scraping_run_id=b6bcf7b7-120c-11f0-9ce5-0242ac120003"
+    url = "https://scrapemequickly.com/cars/static/0?scraping_run_id=89d5dca4-0a34-11f0-b686-4a33b21d14f6"
     filename = "webpage.html"
     async with aiohttp.ClientSession() as session:
         await write_html_to_file(url, session, filename)
