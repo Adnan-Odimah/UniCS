@@ -147,5 +147,5 @@ def handle_data():
         "avg_price": avg_price,
         "mode_make": mode_make
     }
-    
+
     return answers
