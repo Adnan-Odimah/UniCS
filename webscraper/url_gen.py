@@ -9,13 +9,12 @@ BASE_URL = "https://scrapemequickly.com/all_cars?"
 RUN_ID = f"scraping_run_id="
 TEAM_ID = "3dcee599-120c-11f0-b749-0242ac120003"
 
+CONCURRENT_PER_PROXY = 200
+
 with open("proxies.txt", "r") as f:
     PROXIES = [line.strip() for line in f.readlines()]
 
-SESSIONS = asyncio.Queue()
-
-CONCURRENT_PER_PROXY = 200
-END_IDX = 1000
+END_IDX = 10000
 
 async def get_token(scraping_run_id: str):
     async with aiohttp.ClientSession() as session:
@@ -38,21 +37,16 @@ async def submit(answers: dict, scraping_run_id: str, session: aiohttp.ClientSes
             raise Exception("Failed to submit answers")
         return await response.json()
 
-
-
-async def setup_sessions():
-    for _ in PROXIES:
-        session = aiohttp.ClientSession()
-        await SESSIONS.put(session)
-
-
 def handle_data(data: dict):
     """
     get the data that they need and send it to their server
     """
-    years = data["year"]
-    prices = data["price"]
-    makes = [m.lower().strip() for m in data["make"]]
+    years, prices, makes = [], [], []
+    for el in data:
+        for el2 in el:
+            years.append(el2["year"])
+            prices.append(el2["price"])
+            makes.append(el2["make"])
 
     min_year = min(years)
     max_year = max(years)
@@ -67,47 +61,51 @@ def handle_data(data: dict):
     }
     return answers
 
-async def fetch(start_idx: int, session: aiohttp.ClientSession, proxy: str, scraping_run_id: str, token):
-    data = await scrape_page(start_idx, session, proxy, scraping_run_id, token)
-    return data
+async def worker(proxy, indices, scraping_run_id, token):
+    semaphore = asyncio.Semaphore(CONCURRENT_PER_PROXY)
+    async with aiohttp.ClientSession() as session:
+        tasks = [scrape_page(index, session, proxy, scraping_run_id, token, semaphore) for index in indices]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        # Filter out errors and return only successful responses
+        return [r for r in results if not isinstance(r, Exception)]
 
 async def main():
-    await setup_sessions()
+    idx_split = END_IDX // 25
 
-    idx_per_session = END_IDX // 25
+    starts_per = []
+    # each proxy needs to pic
+    # [1, 2, 3, 4, 5]
+    # 1 -> [0-24, 25-49, ..., idx_split]
+    # 2 -> [idx_split+1, idx_split+2, ..., idx_split*2]
+    # ...
+    # 5 -> [idx_split*4+1, idx_split*4+2, ..., END_IDX]
 
-    idx_per_proxy = idx_per_session // len(PROXIES)
-    start_offset = 0
-
-    idxs = []
-
-    for i in range(len(PROXIES)):
-        start_idx = i * idx_per_session
-        idxs.append(start_idx)
+    # code for it:
+    for i in range(5):
+        starts_per.append([])
+        for j in range(i*idx_split, (i+1)*idx_split, 25):
+            starts_per[i].append(j)
 
     scraping_run_id, start = await start_scraping_run()
-    tasks = []
-    sessions = []
+    token = await get_token(scraping_run_id)
 
-    for i, proxy in enumerate(PROXIES):
-        session = await SESSIONS.get()
-        sessions.append(session)
-        tasks.append([fetch(index, session, proxy, scraping_run_id, await get_token(scraping_run_id)) for index in range(start_offset, start_offset + idx_per_proxy)])
-        start_offset += idx_per_proxy
-
+    tasks = [worker(PROXIES[i], starts_per[i], scraping_run_id, token) for i in range(len(PROXIES))]
     data = await asyncio.gather(*tasks)
 
-    # Close all sessions after we're done
-    for session in sessions:
-        await session.close()
+    # Flatten the data and filter out any remaining errors
+    flat_data = []
+    for proxy_data in data:
+        for item in proxy_data:
+            if not isinstance(item, Exception):
+                flat_data.append(item)
 
     with open("data2.json", "w") as f:
-        json.dump(data, f)
+        json.dump(flat_data, f)
 
     end = time.perf_counter()
     print(f"Time taken: {end - start}")
 
-    print(handle_data(data))
+    print(handle_data(flat_data))
     #await submit(data, scraping_run_id, SESSIONS.get())
 
 
