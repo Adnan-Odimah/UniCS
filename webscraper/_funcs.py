@@ -58,7 +58,9 @@ def handle_data():
     """
     get the data that they need and send it to their server
     """
-    
+    years = data["year"]
+    price = data["price"]
+    make = data["make"]
     pass
 
 # data = {
@@ -66,3 +68,5 @@ def handle_data():
 #     "price": [ "12500", "13999", ... ],
 #     "make": [ "ford", "toyota", ... ]
 # }
+
+# data = {"year": [], "price": [], "make": []}
