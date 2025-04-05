@@ -86,6 +86,15 @@ async def main():
         for j in range(i*idx_split, (i+1)*idx_split, 25):
             starts_per[i].append(j)
 
+    y = END_IDX
+    for i in range(5):
+        x = sum(starts_per[i])
+        y -= x
+    print(y)
+
+    return
+
+
     scraping_run_id, start = await start_scraping_run()
     token = await get_token(scraping_run_id)
 
