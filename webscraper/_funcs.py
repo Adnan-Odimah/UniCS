@@ -2,12 +2,12 @@ import requests
 from bs4 import BeautifulSoup
 import sys
 import json
-
+import threading as th
 BASE_URL = "https://scrapemequickly.com/cars/static/"
-SCRAPING_RUN_ID = "b6bcf7b7-120c-11f0-9ce5-0242ac120003"
-RUN_ID = f"?scarping_run_id={SCRAPING_RUN_ID}"
+RUN_ID = f"?scarping_run_id="
 TEAM_ID = "3dcee599-120c-11f0-b749-0242ac120003"
 
+data = {"year": [], "price": [], "make": []}
 
 def scrape_page(page_url: str, session: requests.Session):
     """
@@ -85,9 +85,9 @@ def submit(answers: dict, scraping_run_id: str) -> bool:
 
     return True
 
-def page_finder(start_idx: int, end_idx: int, _session):
+def page_finder(start_idx: int, end_idx: int, _session, scraping_run_id):
     for i in range(start_idx, end_idx):
-        url = f"{BASE_URL}{i}{RUN_ID}"
+        url = f"{BASE_URL}{i}{RUN_ID}{scraping_run_id}"
         year, price, make = scrape_page(url, _session)
         if year and price and make:
             data["year"].append(year)
@@ -96,12 +96,30 @@ def page_finder(start_idx: int, end_idx: int, _session):
         else:
             print(f"No data found for {url}")
 
+def thread_gen(thread_count, end_idx, proxies, scraping_run_id):
+    threads = []
+    split_idx = end_idx // thread_count
+    for i in range(thread_count):
+        if i == 6:
+            session = requests.Session()
+        else:
+            proxy = proxies[i]
+            session = requests.Session()
+            session.proxies.update({"http": proxy, "https": proxy})
+        start_idx = i * split_idx
+        end_idx = start_idx + split_idx
+        thread = th.Thread(target=page_finder, args=(start_idx, end_idx, session, scraping_run_id))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
 def handle_data():
     """
     get the data that they need and send it to their server
     """
-
-    pass
+    return {}
 
 # data = {
 #     "year": [ "1999", "2004", ... ],
