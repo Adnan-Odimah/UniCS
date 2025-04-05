@@ -41,12 +41,6 @@ def page_finder(start_idx: int, end_idx: int, _session):
         else:
             print(f"No data found for {url}")
 
-def handle_data():
-    """
-    get the data that they need and send it to their server
-    """
-    pass
-
 if __name__ == "__main__":
     main()
     print(data)
