@@ -1,12 +1,11 @@
 import threading as th
-from _funcs import scrape_page
+from _funcs import scrape_page, start_scraping_run, submit, page_finder, handle_data
 import requests
+import time
 
 END_IDX = 100
-THREAED_COUNT = 5
-BASE_URL = "https://scrapemequickly.com/cars/static/"
-SCRAPING_RUN_ID = "b6bcf7b7-120c-11f0-9ce5-0242ac120003"
-RUN_ID = f"?scarping_run_id={SCRAPING_RUN_ID}"
+THREAED_COUNT = 6
+
 with open("proxies.txt", "r") as f:
     PROXIES = f.read().splitlines()
 
@@ -17,10 +16,14 @@ def main():
     threads = []
     split_idx = END_IDX // THREAED_COUNT
     for i in range(THREAED_COUNT):
-        proxy = PROXIES[i]
-        session = requests.Session()
-        session.proxies.update({"http": proxy, "https": proxy})
-        sessions.append(session)
+        if i == 6:
+            session = requests.Session()
+            sessions.append(session)
+        else:
+            proxy = PROXIES[i]
+            session = requests.Session()
+            session.proxies.update({"http": proxy, "https": proxy})
+            sessions.append(session)
         start_idx = i * split_idx
         end_idx = start_idx + split_idx
         thread = th.Thread(target=page_finder, args=(start_idx, end_idx, session))
@@ -30,17 +33,11 @@ def main():
     for thread in threads:
         thread.join()
 
-def page_finder(start_idx: int, end_idx: int, _session):
-    for i in range(start_idx, end_idx):
-        url = f"{BASE_URL}{i}{RUN_ID}"
-        year, price, make = scrape_page(url, _session)
-        if year and price and make:
-            data["year"].append(year)
-            data["price"].append(price)
-            data["make"].append(make)
-        else:
-            print(f"No data found for {url}")
 
 if __name__ == "__main__":
+    # timer for speed
+    start_time = time.time()
     main()
+    end_time = time.time()
+    print(f"Time taken: {end_time - start_time} seconds")
     print(data)
