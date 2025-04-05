@@ -12,7 +12,7 @@ TEAM_ID = "3dcee599-120c-11f0-b749-0242ac120003"
 
 data = {"year": [], "price": [], "make": []}
 
-def scrape_page(page_url: str, session: requests.Session):
+async def scrape_page(page_url: str, session: requests.Session):
     """
     Scrapes pages with IDs in [start_idx, end_idx] from base_url
     and computes the min year, max year, average price, and mode make.
@@ -28,9 +28,9 @@ def scrape_page(page_url: str, session: requests.Session):
 
     # Loop through the specified range of IDs
     try:
-        response = session.get(page_url)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
+        async with session.get(page_url) as response:
+            html = await response.text()
+    except Exception as e:
         print(f"Failed to fetch {page_url}: {e}")
         return None, None, None
 
