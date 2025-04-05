@@ -6,7 +6,7 @@ URL = "mts-prism.com"
 PORT = 8082
 
 # Please do NOT share this information anywhere, unless you want your team to be cooked.
-TEAM_API_CODE = "PLEASE_ASK_FOR_AN_API_KEY"
+TEAM_API_CODE = "039acbf2cceb770afa2b59b4cb856a80"
 # @cyrus or @myguysai on Discord if you need an API key
 
 
