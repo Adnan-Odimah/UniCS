@@ -7,14 +7,14 @@ def scrape_page(page_url: str, session: requests.Session):
     Scrapes pages with IDs in [start_idx, end_idx] from base_url
     and computes the min year, max year, average price, and mode make.
 
-    :param base_url: The URL pattern where pages can be fetched. 
+    :param base_url: The URL pattern where pages can be fetched.
                      For example, 'http://example.com/car?id='
     :param start_idx: The starting ID to scrape.
     :param end_idx:   The ending ID to scrape.
     :return: A dictionary with min_year, max_year, avg_price, mode_make
     """
 
-    # year, price, make 
+    # year, price, make
 
     # Loop through the specified range of IDs
     try:
@@ -40,19 +40,16 @@ def scrape_page(page_url: str, session: requests.Session):
     if price_text:
         # Might be something like "Price: $12573"
         price_str = price_text.split(":")[-1].strip().lstrip('$')
-        
+
 
     # --- Extract the Make ---
     # Example: <h2>Ford, Aerostar</h2> or <p>Make: Ford</p>
-    # For demonstration, let's assume there's a line "Ford, Aerostar" 
+    # For demonstration, let's assume there's a line "Ford, Aerostar"
     # and you only want the brand name "Ford".
     make_text = soup.find(text=lambda t: "," in t)  # e.g. "Ford, Aerostar"
     if make_text:
         brand_part = make_text.split(",")[0].strip()
-        
-
-
-    return year_str, price_str, brand_part 
 
 
 
+    return year_str, price_str, brand_part
