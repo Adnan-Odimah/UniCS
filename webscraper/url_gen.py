@@ -9,12 +9,10 @@ BASE_URL = "https://scrapemequickly.com/all_cars?"
 RUN_ID = f"scraping_run_id="
 TEAM_ID = "3dcee599-120c-11f0-b749-0242ac120003"
 
-CONCURRENT_PER_PROXY = 5
-
 with open("proxies.txt", "r") as f:
     PROXIES = [line.strip() for line in f.readlines()]
 
-END_IDX = 25_000
+END_IDX = 10_000
 
 async def get_token(scraping_run_id: str):
     async with aiohttp.ClientSession() as session:
@@ -61,10 +59,10 @@ def handle_data(data: dict):
     }
     return answers
 
-async def worker(proxy, indices, scraping_run_id, token):
+async def worker(proxy, indices, scraping_run_id, token, BASE_DELAY, CONCURRENT_PER_PROXY):
     semaphore = asyncio.Semaphore(CONCURRENT_PER_PROXY)
     async with aiohttp.ClientSession() as session:
-        tasks = [scrape_page(index, session, proxy, scraping_run_id, token, semaphore) for index in indices]
+        tasks = [scrape_page(index, session, proxy, scraping_run_id, token, semaphore, BASE_DELAY) for index in indices]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         # Filter out errors and return only successful responses
         for r in results:
@@ -72,7 +70,7 @@ async def worker(proxy, indices, scraping_run_id, token):
                 print(r)
         return [r for r in results if not isinstance(r, Exception)]
 
-async def main():
+async def main(CONCURRENT_PER_PROXY, BASE_DELAY):
     idx_split = END_IDX // len(PROXIES)
 
     starts_per = []
@@ -100,7 +98,7 @@ async def main():
     scraping_run_id, start = await start_scraping_run()
     token = await get_token(scraping_run_id)
 
-    tasks = [worker(PROXIES[i], starts_per[i], scraping_run_id, token) for i in range(len(PROXIES))]
+    tasks = [worker(PROXIES[i], starts_per[i], scraping_run_id, token, BASE_DELAY, CONCURRENT_PER_PROXY) for i in range(len(PROXIES))]
     data = await asyncio.gather(*tasks, return_exceptions=True)
 
     # Flatten the data and filter out any remaining errors
@@ -118,10 +116,18 @@ async def main():
     end = time.perf_counter()
     print(f"Time taken: {end - start}")
 
-    print(handle_data(flat_data))
+    #print(handle_data(flat_data))
     #await submit(data, scraping_run_id, SESSIONS.get())
 
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import sys
+
+
+    if len(sys.argv) > 1:
+        CONCURRENT_PER_PROXY = int(sys.argv[1])
+        BASE_DELAY = float(sys.argv[2])
+        asyncio.run(main(CONCURRENT_PER_PROXY, BASE_DELAY))
+    else:
+        asyncio.run(main())
