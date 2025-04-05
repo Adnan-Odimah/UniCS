@@ -5,29 +5,20 @@ parameters = ["CONCURRENT_PER_PROXY", "base_delay"]
 """
     "attempt2": {
         "CONCURRENT_PER_PROXY": 10,
-        "base_delay": 1.5,
-    },
+        "base_delay": 1,
+    },  11.45
 """
 
 values = {
-    "attempt1": {
-        "CONCURRENT_PER_PROXY": 5,
-        "base_delay": 1.5,
-    },
-    "attempt2": {
-        "CONCURRENT_PER_PROXY": 10,
-        "base_delay": 1.5,
-    },
-    "attempt3": {
-        "CONCURRENT_PER_PROXY": 10,
-        "base_delay": 1,
-    },
+    #"attempt3": {
+    #    "CONCURRENT_PER_PROXY": 10,
+    #    "base_delay": 1.1,
+    #},
     "attempt4": {
-        "CONCURRENT_PER_PROXY": 25,
-        "base_delay": 1,
+        "CONCURRENT_PER_PROXY": 5,
+        "base_delay": 0.5,
     },
 }
-
 results = []
 for i, attempt in enumerate(values):
     # run with parameters, and save the output

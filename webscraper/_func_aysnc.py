@@ -20,7 +20,7 @@ async def get_headers(token: str, scraping_run_id: str):
     }
 
 async def scrape_page(start_indx: int, session: aiohttp.ClientSession, proxy: str, scraping_run_id: str, token, semaphore, base_delay: float):
-    max_retries = 5
+    max_retries = 10
 
     for attempt in range(max_retries):
         try:
