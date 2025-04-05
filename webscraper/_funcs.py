@@ -5,6 +5,7 @@ import re
 import sys
 import json
 import threading as th
+
 BASE_URL = "https://scrapemequickly.com/cars/static/"
 RUN_ID = f"?scraping_run_id="
 TEAM_ID = "3dcee599-120c-11f0-b749-0242ac120003"
@@ -132,22 +133,19 @@ def handle_data():
     """
     print(data)
     years = data["year"]
-    price = data["price"]
-    make = data["make"]
-    pass
-    return {}
+    prices = data["price"]
+    makes = [m.lower().strip() for m in data["make"]]
 
-# data = {
-#     "year": [ "1999", "2004", ... ],
-#     "price": [ "12500", "13999", ... ],
-#     "make": [ "ford", "toyota", ... ]
-# }
+    min_year = min(years)
+    max_year = max(years)
+    avg_price = sum(prices) // len(prices)
+    mode_make = Counter(makes).most_common(1)[0][0]
 
-# data = {"year": [], "price": [], "make": []}
-
-# {
-#     "min_year": 1934,
-#     "max_year": 2024,
-#     "avg_price": 24148,
-#     "mode_make": "volkswagen"
-# }
+    answers = {
+        "min_year": min_year,
+        "max_year": max_year,
+        "avg_price": avg_price,
+        "mode_make": mode_make
+    }
+    
+    return answers
