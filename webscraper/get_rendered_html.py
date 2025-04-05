@@ -10,22 +10,25 @@ async def write_rendered_html_to_file(page_url: str, filename: str):
     :param page_url: URL of the webpage to fetch.
     :param filename: The file path where the HTML will be saved.
     """
+    # Launch a headless browser.
+    browser = await launch()
+    page = await browser.newPage()
+    
+    # Navigate to the page and wait until network is idle (i.e., JS has rendered).
+    await page.goto(page_url, {'waitUntil': 'domcontentloaded'})
+    
+    await page.waitFor(2000)
+
+    # Get the full rendered HTML content.
+    html = await page.content()
+
+    
+    # Write the HTML to a file.
+    async with aiofiles.open(filename, 'w', encoding='utf-8') as f:
+        await f.write(html)
+    print(f"Successfully wrote rendered HTML to {filename}")
+        
     try:
-        # Launch a headless browser.
-        browser = await launch(headless=True)
-        page = await browser.newPage()
-        
-        # Navigate to the page and wait until network is idle (i.e., JS has rendered).
-        await page.goto(page_url, {'waitUntil': 'networkidle0'})
-        
-        # Get the full rendered HTML content.
-        html = await page.content()
-        
-        # Write the HTML to a file.
-        async with aiofiles.open(filename, 'w', encoding='utf-8') as f:
-            await f.write(html)
-        print(f"Successfully wrote rendered HTML to {filename}")
-        
         # Close the browser.
         await browser.close()
     except Exception as e:

@@ -3,7 +3,6 @@ import asyncio
 import aiohttp
 
 
-
 async def fetch_car_data(car_url: str, session: aiohttp.ClientSession, semaphore: asyncio.Semaphore):
     """
     Fetch a single car page and extract year, price, and make using regex.
@@ -71,20 +70,3 @@ async def scrape_page(page_url: str, start_indx: int, end_index: int, session: a
     
     return {"years": years, "prices": prices, "makes": makes}
 
-# Example usage:
-if __name__ == "__main__":
-    async def main():
-        # The URL pattern from the sitemap with a {car_id} placeholder.
-        page_url = "https://scrapemequickly.com/cars/static/{car_id}"
-        start_indx = 1
-        end_index = 10000  # For 10,000 car pages.
-        max_concurrent_requests = 50  # Adjust this number based on your system and target server.
-        
-        semaphore = asyncio.Semaphore(max_concurrent_requests)
-        async with aiohttp.ClientSession() as session:
-            data = await scrape_page(page_url, start_indx, end_index, session, semaphore)
-            print("Years:", data["years"][:5], "...")   # Show a sample of the data
-            print("Prices:", data["prices"][:5], "...")
-            print("Makes:", data["makes"][:5], "...")
-    
-    asyncio.run(main())
