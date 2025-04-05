@@ -100,4 +100,11 @@ def handle_data():
     """
     get the data that they need and send it to their server
     """
+
     pass
+
+# data = {
+#     "year": [ "1999", "2004", ... ],
+#     "price": [ "12500", "13999", ... ],
+#     "make": [ "ford", "toyota", ... ]
+# }
