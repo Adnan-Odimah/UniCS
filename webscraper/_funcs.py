@@ -145,18 +145,3 @@ def handle_data():
     }
     
     return answers
-
-# data = {
-#     "year": [ "1999", "2004", ... ],
-#     "price": [ "12500", "13999", ... ],
-#     "make": [ "ford", "toyota", ... ]
-# }
-
-# data = {"year": [], "price": [], "make": []}
-
-# {
-#     "min_year": 1934,
-#     "max_year": 2024,
-#     "avg_price": 24148,
-#     "mode_make": "volkswagen"
-# }
