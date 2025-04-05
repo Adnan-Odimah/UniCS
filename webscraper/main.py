@@ -24,20 +24,7 @@ def main():
     print(res.text)
     print(token)
 
-    headers = {
-    "Authorization": f"Bearer {token}",
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/123.0.0.0 Safari/537.36"
-    ),
-    "Referer": f"https://scrapemequickly.com/all_cars?scraping_run_id={SCRAPING_RUN_ID}",
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
-    "Connection": "keep-alive",
-    "DNT": "1",
-    }
+
 
 
     api_url = f"https://api.scrapemequickly.com/cars/test?scraping_run_id={SCRAPING_RUN_ID}&per_page=100000&start=0"
@@ -45,7 +32,7 @@ def main():
 
     print(res2.status_code)
     print(res2.json())
-    
+
 
     #submit(data, SCRAPING_RUN_ID)
 

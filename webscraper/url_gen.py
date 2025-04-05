@@ -9,12 +9,12 @@ BASE_URL = "https://scrapemequickly.com/all_cars?"
 RUN_ID = f"scraping_run_id="
 TEAM_ID = "3dcee599-120c-11f0-b749-0242ac120003"
 
-CONCURRENT_PER_PROXY = 200
+CONCURRENT_PER_PROXY = 5
 
 with open("proxies.txt", "r") as f:
     PROXIES = [line.strip() for line in f.readlines()]
 
-END_IDX = 10000
+END_IDX = 25_000
 
 async def get_token(scraping_run_id: str):
     async with aiohttp.ClientSession() as session:
@@ -67,10 +67,13 @@ async def worker(proxy, indices, scraping_run_id, token):
         tasks = [scrape_page(index, session, proxy, scraping_run_id, token, semaphore) for index in indices]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         # Filter out errors and return only successful responses
+        for r in results:
+            if isinstance(r, Exception):
+                print(r)
         return [r for r in results if not isinstance(r, Exception)]
 
 async def main():
-    idx_split = END_IDX // 25
+    idx_split = END_IDX // len(PROXIES)
 
     starts_per = []
     # each proxy needs to pic
@@ -81,25 +84,24 @@ async def main():
     # 5 -> [idx_split*4+1, idx_split*4+2, ..., END_IDX]
 
     # code for it:
+    #print(idx_split)
     for i in range(5):
         starts_per.append([])
         for j in range(i*idx_split, (i+1)*idx_split, 25):
             starts_per[i].append(j)
+          #  print(j, i)
+          #  time.sleep(0.3)
 
-    y = END_IDX
-    for i in range(5):
-        x = sum(starts_per[i])
-        y -= x
-    print(y)
+   # print(starts_per)
 
-    return
+   # return
 
 
     scraping_run_id, start = await start_scraping_run()
     token = await get_token(scraping_run_id)
 
     tasks = [worker(PROXIES[i], starts_per[i], scraping_run_id, token) for i in range(len(PROXIES))]
-    data = await asyncio.gather(*tasks)
+    data = await asyncio.gather(*tasks, return_exceptions=True)
 
     # Flatten the data and filter out any remaining errors
     flat_data = []
@@ -107,6 +109,8 @@ async def main():
         for item in proxy_data:
             if not isinstance(item, Exception):
                 flat_data.append(item)
+            else:
+                print(item)
 
     with open("data2.json", "w") as f:
         json.dump(flat_data, f)
