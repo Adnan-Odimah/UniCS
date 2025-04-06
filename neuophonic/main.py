@@ -3,7 +3,7 @@ Entry point for the EcoMeal Mentor application.
 Integrates voice command processing with backend API functions to provide recipe suggestions.
 """
 
-from voice_module import process_voice_command
+from voice_module import process_voice_command, process_input, text_to_speech
 from backend_api import suggest_recipe
 
 def main():
@@ -19,6 +19,10 @@ def main():
         print(recipe)
     else:
         print("Command not recognized. Please try saying 'Give me a recipe suggestion.'")
+
+    #process_input("How can you help me")
+    text_to_speech("Hello Abdullah, How can I help you today")
+
 
 if __name__ == "__main__":
     main()
