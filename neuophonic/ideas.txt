@@ -1,29 +1,4 @@
-Idea 1: ZenCommand – Your On-Demand Digital Detox Assistant
-Everyday Problem:
-In an ultra-connected urban environment, constant digital stimulation can lead to stress and cognitive overload.
-
-Solution Overview:
-ZenCommand is a voice-activated assistant that helps users “unplug” by temporarily silencing non-essential notifications, adjusting ambient smart home settings (lighting, sound, climate), and guiding brief mindfulness exercises.
-
-Key Components:
-
-Voice-Activated Trigger: Users initiate “Zen mode” with a voice command.
-
-Smart Home Integration: Simulated API calls to adjust lighting, sound, and climate settings.
-
-Mindfulness Prompts: The assistant offers a guided breathing exercise or calming tip.
-
-Team Breakdown:
-
-Voice Module Developer: Implements voice recognition and command processing.
-
-Backend Developer: Develops simulated API endpoints.
-
-Frontend Developer: Creates a simple dashboard showing system status.
-
-Integration & Testing Lead: Ensures end-to-end workflow.
-
----------------------------------------------------------------------------------------------------------------------------
+MAIN IDEA:
 
 Idea 2: UrbanCommute Coach – Stress-Free Navigation for the Future
 Everyday Problem:
