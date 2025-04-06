@@ -69,6 +69,8 @@ class Scraper:
 
                     if response.status != 200:
                         if attempt == max_retries - 1:
+                            with open("error.txt", "w") as f:
+                                f.write(await response.text())
                             raise Exception(f"Failed to submit answers after {max_retries} attempts. Status: {response.status}")
                         await asyncio.sleep(base_delay * (2 ** attempt))
                         continue
