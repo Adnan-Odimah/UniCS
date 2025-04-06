@@ -1,0 +1,46 @@
+Categories:
+
+efficient: The appliance is performing very well with minimal energy consumption.
+
+optimal: The appliance is operating at a desirable level, balancing performance and energy usage.
+
+suboptimal: The appliance is not performing as well as it could be, possibly due to wear or inefficiencies that could be improved with maintenance.
+
+inefficient: The appliance is consuming more energy than expected, suggesting a need for immediate attention or replacement.
+
+low_usage: The appliance is being used sparingly, which is beneficial for energy conservation.
+
+high_usage: The appliance is consuming a lot of energy, which might prompt a review of usage habits or operational settings.
+
+unknown: A fallback state used when there is no data available or the appliance’s state cannot be determined.
+
+Possible States:
+
+Mood:
+
+"happy"
+
+"sad"
+
+"energetic"
+
+"relaxed"
+
+Diet:
+
+"vegan"
+
+"vegetarian"
+
+"gluten-free"
+
+"low-carb"
+
+Preferences:
+This is a dictionary that can include:
+
+flavor: e.g., "spicy", "sweet", etc.
+
+dislikes: a list of ingredients to avoid (e.g., ["onion", "garlic"])
+
+cooking_method: e.g., "stir-fry", "bowl", etc.

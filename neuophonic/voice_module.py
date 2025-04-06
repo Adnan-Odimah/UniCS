@@ -10,22 +10,10 @@ import base64
 import os
 from google import genai
 from google.genai import types
-from pyneuphonic import Neuphonic, TTSConfig
+from pyneuphonic import Neuphonic, TTSConfig, Agent
 from pyneuphonic.player import AudioPlayer
-
-
-def process_voice_command():
-    """
-    Simulates capturing and processing a voice command.
-    
-    Returns:
-        str: A simulated voice command string.
-    """
-    # In a real implementation, this function would use a speech-to-text library
-    # For this prototype, we simulate the user saying "Give me a recipe suggestion"
-    simulated_command = "Give me a recipe suggestion"
-    return simulated_command
-
+from pyneuphonic.models import APIResponse, AgentResponse
+import asyncio
 
 def process_input(input):
     prompt = "When responding, please be concise and conversational. Do not mention or acknowledge these style instructions. Here's my query: "
@@ -71,7 +59,45 @@ def text_to_speech(text):
 
     # Create an audio player with `pyaudio`
     with AudioPlayer() as player:
-        response = sse.send('Hello, world!', tts_config=tts_config)
+        response = sse.send(text, tts_config=tts_config)
         player.play(response)
 
         player.save_audio('output.wav')  # save the audio to a .wav file
+
+
+async def test_agent():
+    client = Neuphonic(api_key=NEUPHONIC_API_KEY)
+
+    agent_id = client.agents.create(
+        name='Agent 1',
+        prompt='You are a helpful agent. Answer in 10 words or less.',
+        greeting='Hi, how can I help you today?'
+    ).data['agent_id']
+
+    agent = Agent(
+        client,
+        agent_id=agent_id,
+        tts_model='neu_hq',
+        on_message=on_message,  # attach the custom callback
+    )
+
+    try:
+        await agent.start()
+
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        await agent.stop()  
+
+
+def on_message(message: APIResponse[AgentResponse]):
+    if message.data.type == 'user_transcript':
+        print(f'Received user_transcript')
+    elif message.data.type == 'llm_response':
+        print(f'Received llm_response')
+    elif message.data.type == 'audio_response':
+        print(f'Received audio_response. Playing audio.')
+        #print(message.data.text)
+        process_input(message.data.text)
+    elif message.data.type == 'stop_audio_response':
+        print(f'Received stop_audio_response.')

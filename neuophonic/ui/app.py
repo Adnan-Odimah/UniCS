@@ -16,7 +16,14 @@ def index():
     Returns:
         HTML: Rendered template with the recipe suggestion.
     """
-    recipe = suggest_recipe()  # Get the recipe suggestion from the backend API
+
+    user_preferences = {
+    "flavor": "spicy",
+    "dislikes": ["onion"],
+    "cooking_method": "stir-fry"
+    }  
+
+    recipe = suggest_recipe("energetic", "vegan", user_preferences) 
     return render_template("index.html", recipe=recipe)
 
 if __name__ == "__main__":
