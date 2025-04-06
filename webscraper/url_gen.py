@@ -2,9 +2,15 @@ import aiohttp
 import asyncio
 import json
 from collections import Counter
-from _func_aysnc import scrape_page, test_rate_limit
+from _func_aysnc import scrape_page
 import time
 from more_itertools import minmax
+from typing import List, Dict, Any
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://scrapemequickly.com/all_cars?"
 RUN_ID = f"scraping_run_id="
@@ -14,144 +20,143 @@ with open("proxies.txt", "r") as f:
     PROXIES = [line.strip() for line in f.readlines()]
 
 END_IDX = 25_000
+BATCH_SIZE = 25  # Adjust based on API limits and performance testing
 
-async def get_token(scraping_run_id: str):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f"https://api.scrapemequickly.com/get-token?scraping_run_id={scraping_run_id}") as response:
+class Scraper:
+    def __init__(self, concurrent_per_proxy: int, base_delay: float):
+        self.concurrent_per_proxy = concurrent_per_proxy
+        self.base_delay = base_delay
+        self.session = None
+        self.scraping_run_id = None
+        self.token = None
+        self.start_time = None
+
+    async def __aenter__(self):
+        self.session = aiohttp.ClientSession()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.session:
+            await self.session.close()
+
+    async def get_token(self) -> str:
+        async with self.session.get(f"https://api.scrapemequickly.com/get-token?scraping_run_id={self.scraping_run_id}") as response:
             return (await response.json())["token"]
 
-async def start_scraping_run():
-    async with aiohttp.ClientSession() as session:
-        start = time.perf_counter()
-        async with session.post(f"https://api.scrapemequickly.com/scraping-run?team_id={TEAM_ID}") as response:
+    async def start_scraping_run(self):
+        self.start_time = time.perf_counter()
+        async with self.session.post(f"https://api.scrapemequickly.com/scraping-run?team_id={TEAM_ID}") as response:
             if response.status != 200:
                 raise Exception("Failed to start scraping run")
-            return (await response.json())["data"]["scraping_run_id"], start
+            self.scraping_run_id = (await response.json())["data"]["scraping_run_id"]
+            self.token = await self.get_token()
 
-async def submit(answers: dict, scraping_run_id: str):
-    max_retries = 5
-    base_delay = 1
-    await asyncio.sleep(1)
-    time.sleep(1)
+    async def submit(self, answers: Dict[str, Any]) -> Dict[str, Any]:
+        max_retries = 5
+        base_delay = 0.00888
 
-    for attempt in range(max_retries):
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"https://api.scrapemequickly.com/cars/solve?scraping_run_id={scraping_run_id}",
+        for attempt in range(max_retries):
+            try:
+                async with self.session.post(
+                    f"https://api.scrapemequickly.com/cars/solve?scraping_run_id={self.scraping_run_id}",
                     data=json.dumps(answers),
                     headers={"Content-Type": "application/json"}
                 ) as response:
-                    if response.status == 429:  # Rate limit
+                    if response.status == 429:
                         retry_after = int(response.headers.get('Retry-After', base_delay * (2 ** attempt)))
-                        print("rate limit", retry_after)
                         await asyncio.sleep(retry_after)
                         continue
 
                     if response.status != 200:
-                        print(response.status)
                         if attempt == max_retries - 1:
                             raise Exception(f"Failed to submit answers after {max_retries} attempts. Status: {response.status}")
-                        print("rate limit 2")
                         await asyncio.sleep(base_delay * (2 ** attempt))
                         continue
 
                     return await response.json()
 
-        except (aiohttp.ClientConnectionError, aiohttp.ClientError) as e:
-            if attempt == max_retries - 1:
-                raise Exception(f"Failed to submit answers after {max_retries} attempts: {str(e)}")
-            print("rate limit error")
-            await asyncio.sleep(base_delay * (2 ** attempt))
-            continue
+            except (aiohttp.ClientConnectionError, aiohttp.ClientError) as e:
+                if attempt == max_retries - 1:
+                    raise Exception(f"Failed to submit answers after {max_retries} attempts: {str(e)}")
+                await asyncio.sleep(base_delay * (2 ** attempt))
+                continue
 
-    raise Exception("Failed to submit answers after all retries")
+        raise Exception("Failed to submit answers after all retries")
 
+    def process_batch(self, batch: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Process a batch of data efficiently"""
+        years = []
+        prices = []
+        makes = []
 
-def handle_data(data: dict):
-    """
-    get the data that they need and send it to their server
-    """
-    years, prices, makes = [], [], []
-    for el in data:
-        for el2 in el:
-            years.append(el2["year"])
-            prices.append(el2["price"])
-            makes.append(el2["make"])
+        for item in batch:
+            if item:  # Skip None results
+                years.append(item["year"])
+                prices.append(item["price"])
+                makes.append(item["make"])
 
-    min_year, max_year = minmax(years)
-    avg_price = sum(prices) / len(prices)
-    mode_make = Counter(makes).most_common(1)[0][0]
+        if not years:  # Handle empty batch
+            return None
 
-    answers = {
-        "min_year": min_year,
-        "max_year": max_year,
-        "avg_price": avg_price,
-        "mode_make": mode_make
-    }
+        return {
+            "min_year": min(years),
+            "max_year": max(years),
+            "avg_price": sum(prices) // len(prices),
+            "mode_make": Counter(makes).most_common(1)[0][0]
+        }
 
-    return answers
+    async def worker(self, proxy: str, indices: List[int]) -> List[Dict[str, Any]]:
+        semaphore = asyncio.Semaphore(self.concurrent_per_proxy)
+        tasks = [
+            scrape_page(
+                index,
+                self.session,
+                proxy,
+                self.scraping_run_id,
+                self.token,
+                semaphore,
+                self.base_delay
+            ) for index in indices
+        ]
+        return await asyncio.gather(*tasks, return_exceptions=True)
 
-async def worker(proxy, indices, scraping_run_id, token, BASE_DELAY, CONCURRENT_PER_PROXY):
-    semaphore = asyncio.Semaphore(CONCURRENT_PER_PROXY)
-    async with aiohttp.ClientSession() as session:
-        tasks = [scrape_page(index, session, proxy, scraping_run_id, token, semaphore, BASE_DELAY) for index in indices]
+    async def run(self):
+        idx_split = END_IDX // len(PROXIES)
+        starts_per = []
 
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        return [r for r in results if not isinstance(r, Exception)]
+        # Generate indices more efficiently
+        for i in range(len(PROXIES)):
+            starts_per.append(list(range(i * idx_split, (i + 1) * idx_split, BATCH_SIZE)))
 
-async def main(CONCURRENT_PER_PROXY, BASE_DELAY):
-    idx_split = END_IDX // len(PROXIES)
+        await self.start_scraping_run()
 
-    starts_per = []
+        # Process in batches
+        tasks = [
+            self.worker(PROXIES[i], starts_per[i])
+            for i in range(len(PROXIES))
+        ]
 
-    for i in range(5):
-        starts_per.append([])
-        for j in range(i*idx_split, (i+1)*idx_split, 25):
-            starts_per[i].append(j)
+        results = await asyncio.gather(*tasks)
 
+        # Process results efficiently
+        processed_data = []
+        for proxy_results in results:
+            if isinstance(proxy_results, Exception):
+                logger.error(f"Error in proxy results: {proxy_results}")
+                continue
+            processed_data.extend([r for r in proxy_results if r is not None])
 
-    scraping_run_id, start = await start_scraping_run()
-    #scraping_run_id = await start_scraping_run()
+        final_results = self.process_batch(processed_data)
+        end_time = time.perf_counter()
 
-#    scraping_run_id = await start_scraping_run()
-    token = await get_token(scraping_run_id)
+        logger.info(f"Time taken: {end_time - self.start_time} seconds")
+        return final_results
 
-    tasks = [worker(PROXIES[i], starts_per[i], scraping_run_id, token, BASE_DELAY, CONCURRENT_PER_PROXY) for i in range(len(PROXIES))]
-    data = await asyncio.gather(*tasks, return_exceptions=True)
-
-    # Flatten the data and filter out any remaining errors
-    flat_data = []
-    for proxy_data in data:
-        for item in proxy_data:
-            if not isinstance(item, Exception):
-                flat_data.append(item)
-            else:
-                print(item)
-
-    with open("data1.json", "w") as f:
-        json.dump(flat_data, f)
-
-    data = handle_data(flat_data)
-    time_taken = time.perf_counter() - start
-    print(f"Time taken: {time_taken} seconds")
-
-
-    await submit(data, scraping_run_id)
+async def main(concurrent_per_proxy: int = 2, base_delay: float = 0):
+    async with Scraper(concurrent_per_proxy, base_delay) as scraper:
+        results = await scraper.run()
+        # Uncomment to submit results
+        # await scraper.submit(results)
 
 if __name__ == "__main__":
-
-#        CONCURRENT_PER_PROXY = int(sys.argv[1])
-#        BASE_DELAY = float(sys.argv[2])
-
-#   2 | 0.0097 | 21.48 - 15-20RL
-
-#   3 |
-
-#   1 |
-
-    CONCURRENT_PER_PROXY =  2
-    BASE_DELAY = 0
-
-    asyncio.run(main(CONCURRENT_PER_PROXY, BASE_DELAY))
-    #asyncio.run(main2(5))
+    asyncio.run(main())

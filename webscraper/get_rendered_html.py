@@ -27,13 +27,13 @@ async def write_rendered_html_to_file(page_url: str, filename: str):
     # Write the HTML to a file.
     async with aiofiles.open(filename, 'w', encoding='utf-8') as f:
         await f.write(html)
-    print(f"Successfully wrote rendered HTML to {filename}")
+    # print(f"Successfully wrote rendered HTML to {filename}")
 
     try:
         # Close the browser.
         await browser.close()
     except Exception as e:
-        print(f"Error: {e}")
+        # print(f"Error: {e}")
 
 # Example usage:
 async def main():

@@ -20,9 +20,9 @@ def main():
     token = res.json().get("token")
 
 
-    print(res.status_code)
-    print(res.text)
-    print(token)
+    # print(res.status_code)
+    # print(res.text)
+    # print(token)
 
 
 
@@ -30,8 +30,8 @@ def main():
     api_url = f"https://api.scrapemequickly.com/cars/test?scraping_run_id={SCRAPING_RUN_ID}&per_page=100000&start=0"
     res2 = requests.get(api_url, headers=headers)
 
-    print(res2.status_code)
-    print(res2.json())
+    # print(res2.status_code)
+    # print(res2.json())
 
 
     #submit(data, SCRAPING_RUN_ID)
@@ -43,4 +43,4 @@ if __name__ == "__main__":
     start_time = time.time()
     main()
     end_time = time.time()
-    print(f"Time taken: {end_time - start_time} seconds")
+    # print(f"Time taken: {end_time - start_time} seconds")

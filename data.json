@@ -232,5 +232,23 @@
     "max_year": 2025,
     "avg_price": 23899.651519659936,
     "mode_make": "Ford"
+  },
+  "e409f23a-1282-11f0-bf54-0242ac120003": {
+    "min_year": 1930,
+    "max_year": 2025,
+    "avg_price": 24117.14252,
+    "mode_make": "Nissan"
+  },
+  "f324ab5a-1282-11f0-bf54-0242ac120003": {
+    "min_year": 1930,
+    "max_year": 2025,
+    "avg_price": 24026.96228,
+    "mode_make": "Nissan"
+  },
+  "042a59d3-1283-11f0-bf54-0242ac120003": {
+    "min_year": 1930,
+    "max_year": 2025,
+    "avg_price": 24001,
+    "mode_make": "Cadillac"
   }
 }

@@ -32,7 +32,7 @@ async def scrape_page(page_url: str, session: requests.Session):
         async with session.get(page_url) as response:
             html = await response.text()
     except Exception as e:
-        print(f"Failed to fetch {page_url}: {e}")
+        # print(f"Failed to fetch {page_url}: {e}")
         return None, None, None
 
     # -- REGEX PATTERNS --
@@ -51,15 +51,15 @@ async def scrape_page(page_url: str, session: requests.Session):
     # -- EXTRACT YEAR --
     year_str = None
     match_year = re.search(year_pattern, html)
-    #print(match_year)
+    ## print(match_year)
     if match_year:
         year = int(match_year.group(1))  # e.g., "1997"
-      #  print("year", year_str)
+      #  # print("year", year_str)
 
     # -- EXTRACT PRICE --
     price_str = None
     match_price = re.search(price_pattern, html)
-    #print(match_price)
+    ## print(match_price)
     if match_price:
         price = int(match_price.group(1))  # e.g., "12573"
 
@@ -75,8 +75,8 @@ def start_scraping_run():
     r = requests.post(f"https://api.scrapemequickly.com/scraping-run?team_id={TEAM_ID}")
 
     if r.status_code != 200:
-        print(r.json())
-        print("Failed to start scraping run")
+        # print(r.json())
+        # print("Failed to start scraping run")
         sys.exit(1)
 
     return r.json()["data"]["scraping_run_id"]
@@ -89,8 +89,8 @@ def submit(answers: dict, scraping_run_id: str) -> bool:
     )
 
     if r.status_code != 200:
-        print(r.json())
-        print("Failed to submit answers")
+        # print(r.json())
+        # print("Failed to submit answers")
         return False
 
     return True
@@ -104,8 +104,8 @@ def page_finder(start_idx: int, end_idx: int, _session, scraping_run_id):
             data["price"].append(price)
             data["make"].append(make)
         else:
-           # print(year, price, make)
-            #print(f"No data found for {url}")
+           # # print(year, price, make)
+            ## print(f"No data found for {url}")
             pass
 
 def thread_gen(thread_count, end_idx, proxies, scraping_run_id):
@@ -131,7 +131,7 @@ def handle_data():
     """
     get the data that they need and send it to their server
     """
-    print(data)
+    # print(data)
     years, prices = data["year"], data["price"]
     makes = data["make"]
 
