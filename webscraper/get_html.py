@@ -16,15 +16,15 @@ async def write_html_to_file(page_url: str, session: aiohttp.ClientSession, file
             response.raise_for_status()  # Raise exception for HTTP errors
             html = await response.text()
     except Exception as e:
-        print(f"Failed to fetch {page_url}: {e}")
+        # print(f"Failed to fetch {page_url}: {e}")
         return
 
     try:
         async with aiofiles.open(filename, 'w', encoding='utf-8') as f:
             await f.write(html)
-        print(f"Successfully wrote HTML to {filename}")
+        # print(f"Successfully wrote HTML to {filename}")
     except Exception as e:
-        print(f"Failed to write HTML to {filename}: {e}")
+        # print(f"Failed to write HTML to {filename}: {e}")
 
 # Example usage
 async def main():
