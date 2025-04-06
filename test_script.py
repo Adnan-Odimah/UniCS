@@ -1,30 +1,12 @@
 import subprocess
-import json
-parameters = ["CONCURRENT_PER_PROXY", "base_delay"]
-# currently 5 | 1.5 | base * (2 ** attempt)
-"""
-    "attempt2": {
-        "CONCURRENT_PER_PROXY": 10,
-        "base_delay": 1,
-    },  11.45
-"""
+import time
 
-values = {
-    #"attempt3": {
-    #    "CONCURRENT_PER_PROXY": 10,
-    #    "base_delay": 1.1,
-    #},
-    "attempt4": {
-        "CONCURRENT_PER_PROXY": 5,
-        "base_delay": 0.5,
-    },
-}
-results = []
-for i, attempt in enumerate(values):
-    # run with parameters, and save the output
-    result = subprocess.run(["python3", "webscraper/url_gen.py", str(values[attempt]["CONCURRENT_PER_PROXY"]), str(values[attempt]["base_delay"])])
-    results.append({"attempt": i, "result": result.stdout})
+def main():
+    while True:
+        command = ["python3", "webscraper/url_gen.py"]
+        print(subprocess.run(command, capture_output=True))
 
+        time.sleep(5)
 
-with open("results.json", "w") as f:
-    json.dump(results, f)
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,1 @@
+{"message":"Results submission body is invalid. Please refer to our README to see an example structure.","error":"Bad Request"}

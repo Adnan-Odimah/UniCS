@@ -20,7 +20,7 @@ with open("proxies.txt", "r") as f:
     PROXIES = [line.strip() for line in f.readlines()]
 
 END_IDX = 25_000
-BATCH_SIZE = 25  # Adjust based on API limits and performance testing
+BATCH_SIZE = 40  # Adjust based on API limits and performance testing
 
 class Scraper:
     def __init__(self, concurrent_per_proxy: int, base_delay: float):
@@ -52,8 +52,10 @@ class Scraper:
             self.token = await self.get_token()
 
     async def submit(self, answers: Dict[str, Any]) -> Dict[str, Any]:
-        max_retries = 5
+        max_retries = 3  # Reduced from 5
         base_delay = 0.00888
+
+        #answers = {"min_year": 1990, "max_year": 2024, "avg_price": 10000, "mode_make": "Toyota"}
 
         for attempt in range(max_retries):
             try:
@@ -63,24 +65,23 @@ class Scraper:
                     headers={"Content-Type": "application/json"}
                 ) as response:
                     if response.status == 429:
-                        retry_after = int(response.headers.get('Retry-After', base_delay * (2 ** attempt)))
-                        await asyncio.sleep(retry_after)
+                        await asyncio.sleep(base_delay)
                         continue
 
                     if response.status != 200:
                         if attempt == max_retries - 1:
                             with open("error.txt", "w") as f:
                                 f.write(await response.text())
-                            raise Exception(f"Failed to submit answers after {max_retries} attempts. Status: {response.status}")
-                        await asyncio.sleep(base_delay * (2 ** attempt))
+                            raise Exception(f"Failed to submit answers after {max_retries} attempts, {await response.text()}")
+                        await asyncio.sleep(base_delay)
                         continue
 
                     return await response.json()
 
-            except (aiohttp.ClientConnectionError, aiohttp.ClientError) as e:
+            except Exception:
                 if attempt == max_retries - 1:
-                    raise Exception(f"Failed to submit answers after {max_retries} attempts: {str(e)}")
-                await asyncio.sleep(base_delay * (2 ** attempt))
+                    raise
+                await asyncio.sleep(base_delay)
                 continue
 
         raise Exception("Failed to submit answers after all retries")
@@ -97,16 +98,13 @@ class Scraper:
             makes = []
 
             for item in batch:
-                if isinstance(item, list):
-                    for car in item:
-                        if isinstance(car, dict):
+                if isinstance(item, Exception):
+                    print(item)
+                for car in item:
                             years.append(car["year"])
                             prices.append(car["price"])
                             makes.append(car["make"])
-                elif isinstance(item, dict):
-                    years.append(item["year"])
-                    prices.append(item["price"])
-                    makes.append(item["make"])
+
 
             if not years:
                 raise Exception("No valid data points found")
@@ -166,10 +164,7 @@ class Scraper:
             raise Exception("No data collected")
 
         final_results = self.process_batch(processed_data)
-        end_time = time.perf_counter()
-
-        scraping_time = end_time - self.start_time
-        logger.info(f"Scraping time: {scraping_time:.2f} seconds")
+        await self.submit(final_results)  # Submit immediately after processing
         return final_results
 
 async def main(concurrent_per_proxy: int = 2, base_delay: float = 0):

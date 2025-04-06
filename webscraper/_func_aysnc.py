@@ -110,7 +110,7 @@ async def scrape_page3(start_indx: int, session: aiohttp.ClientSession, proxy: s
             await asyncio.sleep(base_delay)
 
 async def scrape_page(start_indx: int, session: aiohttp.ClientSession, proxy: str, scraping_run_id: str, token, semaphore, base_delay: float):
-    max_retries = 20  # Reduced from 50 to 20
+    max_retries = 50  # Reduced from 20 to 10
     headers = await get_headers(token, scraping_run_id)  # Cache headers
 
     for attempt in range(max_retries):
