@@ -1,0 +1,4 @@
+allocation_per_stock / price
+500 / 100 = 5 shares
+
+(budget - spent) / price - gets allocation that doesnt go over budget
