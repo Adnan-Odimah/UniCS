@@ -15,6 +15,8 @@ from pyneuphonic.models import APIResponse, AgentResponse
 import aioconsole
 import time
 
+latest_text_response = ""
+
 async def get_user_audio_as_text(client, agent_id):
     user_input = None
     stop_event = asyncio.Event()
@@ -75,6 +77,7 @@ async def main():
             break
         
         text_response = process_user_request(user_text)
+        latest_text_response = text_response
 
         await ws.send(text_response, autocomplete=True)
 

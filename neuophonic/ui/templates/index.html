@@ -1,12 +1,30 @@
-<!-- ui/templates/index.html -->
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>EcoMeal Mentor</title>
+    <title>Text Response Display</title>
 </head>
 <body>
-    <h1>EcoMeal Mentor Recipe Suggestion</h1>
-    <pre>{{ recipe }}</pre>
+    <h1>Latest Text Response</h1>
+    <div id="response">Waiting for response...</div>
+
+    <script>
+        async function fetchResponse() {
+            try {
+                const response = await fetch('/get_response');
+                const data = await response.json();
+                document.getElementById('response').innerText = data.text_response;
+            } catch (error) {
+                console.error('Error fetching text response:', error);
+            }
+        }
+
+        // Poll every 5 seconds (adjust as needed)
+        setInterval(fetchResponse, 5000);
+
+        // Initial fetch
+        fetchResponse();
+    </script>
 </body>
 </html>
