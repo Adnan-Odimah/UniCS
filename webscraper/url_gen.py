@@ -22,11 +22,11 @@ async def get_token(scraping_run_id: str):
 
 async def start_scraping_run():
     async with aiohttp.ClientSession() as session:
-        #start = time.perf_counter()
+        start = time.perf_counter()
         async with session.post(f"https://api.scrapemequickly.com/scraping-run?team_id={TEAM_ID}") as response:
             if response.status != 200:
                 raise Exception("Failed to start scraping run")
-            return (await response.json())["data"]["scraping_run_id"]#, start
+            return (await response.json())["data"]["scraping_run_id"], start
 
 async def submit(answers: dict, scraping_run_id: str):
     max_retries = 5
@@ -111,8 +111,8 @@ async def main(CONCURRENT_PER_PROXY, BASE_DELAY):
             starts_per[i].append(j)
 
 
-   # scraping_run_id, start = await start_scraping_run()
-    scraping_run_id = await start_scraping_run()
+    scraping_run_id, start = await start_scraping_run()
+    #scraping_run_id = await start_scraping_run()
 
 #    scraping_run_id = await start_scraping_run()
     token = await get_token(scraping_run_id)
@@ -133,7 +133,8 @@ async def main(CONCURRENT_PER_PROXY, BASE_DELAY):
         json.dump(flat_data, f)
 
     data = handle_data(flat_data)
-    print(data)
+    time_taken = time.perf_counter() - start
+    print(f"Time taken: {time_taken} seconds")
 
 
     await submit(data, scraping_run_id)
