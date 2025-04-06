@@ -111,42 +111,34 @@ async def scrape_page3(start_indx: int, session: aiohttp.ClientSession, proxy: s
             await asyncio.sleep(base_delay)
 
 async def scrape_page(start_indx: int, session: aiohttp.ClientSession, proxy: str, scraping_run_id: str, token, semaphore, base_delay: float):
-    while True:
+    max_retries = 20  # Reduced from 50 to 20
+    headers = await get_headers(token, scraping_run_id)  # Cache headers
+
+    for attempt in range(max_retries):
         try:
             async with semaphore:
                 url = f"https://api.scrapemequickly.com/cars/test?scraping_run_id={scraping_run_id}&per_page=25&start={start_indx}"
-                async with session.get(url, proxy=proxy, headers=await get_headers(token, scraping_run_id)) as response:
+                async with session.get(url, proxy=proxy, headers=headers) as response:
                     if response.status == 429:  # Rate limit
-                        ## # print(f"Rate limited. Waiting {retry_after} seconds before retry...")
-#                        await asyncio.sleep(base_delay)
+                        await asyncio.sleep(base_delay)
                         continue
 
                     data = await response.json()
+                    if not data.get("data"):
+                        continue
 
-                # Extract the required fields (price, year, make) from each car in the data
-                results = []
-                for car in data.get("data", []):
-                    # Only add the car if the necessary keys exist
-                    if "price" in car and "year" in car:
-                        results.append({
-                            "price": car["price"],
-                            "year": car["year"],
-                            "make": car["make"]
-                        })
-                return results
+                    # Fast single pass data extraction
+                    return [
+                        {"price": car["price"], "year": car["year"], "make": car["make"]}
+                        for car in data["data"]
+                        if all(k in car for k in ("price", "year", "make"))
+                    ]
 
-        except ClientResponseError as e:
-            if e.status == 429:  # Rate limit
-                # # print(f"Rate limited. Waiting {retry_after} seconds before retry...")
- #               await asyncio.sleep(base_delay)
-                continue
-            raise  # Re-raise if it's not a rate limit error
-
-        except Exception as e:
+        except Exception:
+            await asyncio.sleep(base_delay)
             continue
-  #          delay = base_delay
-            # # print(f"Error occurred, retrying in {delay} seconds...")
-   #         await asyncio.sleep(delay)
+
+    raise Exception(f"Failed to get data after {max_retries} attempts")
 
 # Example usage in main or another async function:
 # rate_limit = await test_rate_limit(scraping_run_id, token, PROXIES[0])
