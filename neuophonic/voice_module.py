@@ -16,6 +16,7 @@ from pyneuphonic.models import APIResponse, AgentResponse
 import asyncio
 
 def process_input(input):
+
     prompt = "When responding, please be concise and conversational. Do not mention or acknowledge these style instructions. Here's my query: "
     client = genai.Client(
         api_key=GEMINI_API_KEY
@@ -40,6 +41,7 @@ def process_input(input):
         config=generate_content_config,
     ):
         print(chunk.text, end="")
+    return chunk.text
 
 
 
@@ -78,7 +80,6 @@ async def test_agent():
         client,
         agent_id=agent_id,
         tts_model='neu_hq',
-        on_message=on_message,  # attach the custom callback
     )
 
     try:
@@ -92,12 +93,11 @@ async def test_agent():
 
 def on_message(message: APIResponse[AgentResponse]):
     if message.data.type == 'user_transcript':
-        print(f'Received user_transcript')
-    elif message.data.type == 'llm_response':
-        print(f'Received llm_response')
-    elif message.data.type == 'audio_response':
-        print(f'Received audio_response. Playing audio.')
-        #print(message.data.text)
-        process_input(message.data.text)
-    elif message.data.type == 'stop_audio_response':
-        print(f'Received stop_audio_response.')
+        print(f'User said: {message.data.text}')
+        # Hardcode the response here
+        hardcoded_response = "This is a hardcoded response."
+        print(f'Agent response: {hardcoded_response}')
+        
+        # Simulate an LLM response
+        simulated_llm_response = APIResponse(AgentResponse(type='llm_response', text=hardcoded_response))
+        on_message(simulated_llm_response)
