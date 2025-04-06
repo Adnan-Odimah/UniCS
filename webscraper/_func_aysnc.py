@@ -1,7 +1,6 @@
 import asyncio
 import aiohttp
 from aiohttp import ClientResponseError
-import time
 import sys
 
 async def get_headers(token: str, scraping_run_id: str):

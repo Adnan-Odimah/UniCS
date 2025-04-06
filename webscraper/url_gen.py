@@ -173,8 +173,9 @@ class Scraper:
 async def main(concurrent_per_proxy: int = 2, base_delay: float = 0):
     async with Scraper(concurrent_per_proxy, base_delay) as scraper:
         results = await scraper.run()
+        print(results)
         # Uncomment to submit results
-        # await scraper.submit(results)
+        await scraper.submit(results)
 
 if __name__ == "__main__":
     asyncio.run(main())
