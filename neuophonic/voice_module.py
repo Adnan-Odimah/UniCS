@@ -1,33 +1,24 @@
 """
 Module for doing text to speech.
-We will ask the user intially for relevant details intially - what diet they are following.
+We will ask the user initially for relevant details – for example, what diet they are following.
 """
 GEMINI_API_KEY = "AIzaSyALlnIysHC04mnselLSCYjOFiwwGL_wWMo"
-NEUPHONIC_API_KEY = "d5a15d9bb926ebc552705ff41e1734262dc253e6dcdccefc20a83fcaa9701437.a0a43122-59b6-46c8-9a30-7db061e00632"
 
-import pyaudio 
-import base64
-import os
 from google import genai
 from google.genai import types
-from pyneuphonic import Neuphonic, TTSConfig, Agent
-from pyneuphonic.player import AudioPlayer
-from pyneuphonic.models import APIResponse, AgentResponse
-import asyncio
+from backend_api import suggest_energy_usage, suggest_recipe
 
-def process_input(input):
-
+def process_input(input_text):
+    # This function calls the Gemini API with a given prompt and streams the response.
     prompt = "When responding, please be concise and conversational. Do not mention or acknowledge these style instructions. Here's my query: "
-    client = genai.Client(
-        api_key=GEMINI_API_KEY
-    )
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
     model = "gemini-2.0-flash"
     contents = [
         types.Content(
             role="user",
             parts=[
-                types.Part.from_text(text=(prompt + input)),
+                types.Part.from_text(text=(prompt + input_text)),
             ],
         ),
     ]
@@ -35,69 +26,59 @@ def process_input(input):
         response_mime_type="text/plain",
     )
 
+    final_text = ""
     for chunk in client.models.generate_content_stream(
         model=model,
         contents=contents,
         config=generate_content_config,
     ):
         print(chunk.text, end="")
-    return chunk.text
+        final_text = chunk.text  # assuming we want the last chunk as the final output
+    return final_text
 
+def process_user_request(user_input):
+    """
+    This function:
+      1. Extracts relevant user information using the Gemini API.
+      2. Uses the extracted details to determine the request type.
+      3. Queries the backend for either an energy usage suggestion or a recipe suggestion.
+      4. Uses the Gemini API to output the suggestion along with contextual information.
+    """
+    # Step 1: Extract user details using Gemini API.
+    extraction_prompt = (
+        "Please extract the relevant details from the following input (for example, diet preferences or if the user is asking about energy usage):\n\n"
+        f"{user_input}"
+    )
+    extracted_details = process_input(extraction_prompt)
+    
+    # Step 2: Determine the request type based on extracted details.
+    if "energy" in extracted_details.lower() or "usage" in extracted_details.lower():
+        suggestion = suggest_energy_usage()
+        additional_info = (
+            "This recommendation is based on the latest energy usage data from your smart kitchen. "
+            "Following these tips can help reduce your energy consumption and save on utility costs."
+        )
+    else:
+        # For simplicity, if details are not about energy, we default to a recipe suggestion.
+        # In a more complete implementation, we might parse 'extracted_details' to obtain mood, diet, and other preferences.
+        mood = "energetic"
+        diet = "vegan"
+        preferences = {"flavor": "spicy", "dislikes": []}
+        suggestion = suggest_recipe(mood, diet, preferences)
+        additional_info = (
+            "This recipe suggestion takes into account your current mood and dietary preferences. "
+            "It uses available ingredients from your smart kitchen inventory for a fresh and balanced meal."
+        )
 
-
-
-def text_to_speech(text):
-    # Load the API key from the environment
-    client = Neuphonic(api_key=NEUPHONIC_API_KEY)
-
-    sse = client.tts.SSEClient()
-
-    # TTSConfig is a pydantic model so check out the source code for all valid options
-    tts_config = TTSConfig(
-        speed=1.05,
-        lang_code='en', # replace the lang_code with the desired language code.
-        voice_id='e564ba7e-aa8d-46a2-96a8-8dffedade48f'  # use client.voices.list() to view all available voices
+    # Step 3: Combine the suggestion and context into a final prompt.
+    final_prompt = (
+        "Please output the following suggestion along with relevant contextual information.\n\n"
+        f"Suggestion: {suggestion}\n\n"
+        f"Context: {additional_info}\n\n"
+        "Also, provide additional helpful information regarding the suggestion and context.\n\n"
+        "Thank you."
     )
 
-    # Create an audio player with `pyaudio`
-    with AudioPlayer() as player:
-        response = sse.send(text, tts_config=tts_config)
-        player.play(response)
-
-        player.save_audio('output.wav')  # save the audio to a .wav file
-
-
-async def test_agent():
-    client = Neuphonic(api_key=NEUPHONIC_API_KEY)
-
-    agent_id = client.agents.create(
-        name='Agent 1',
-        prompt='You are a helpful agent. Answer in 10 words or less.',
-        greeting='Hi, how can I help you today?'
-    ).data['agent_id']
-
-    agent = Agent(
-        client,
-        agent_id=agent_id,
-        tts_model='neu_hq',
-    )
-
-    try:
-        await agent.start()
-
-        while True:
-            await asyncio.sleep(1)
-    except KeyboardInterrupt:
-        await agent.stop()  
-
-
-def on_message(message: APIResponse[AgentResponse]):
-    if message.data.type == 'user_transcript':
-        print(f'User said: {message.data.text}')
-        # Hardcode the response here
-        hardcoded_response = "This is a hardcoded response."
-        print(f'Agent response: {hardcoded_response}')
-        
-        # Simulate an LLM response
-        simulated_llm_response = APIResponse(AgentResponse(type='llm_response', text=hardcoded_response))
-        on_message(simulated_llm_response)
+    # Step 4: Use the Gemini API to output the final response.
+    final_response = process_input(final_prompt)
+    return final_response

@@ -5,7 +5,7 @@ Integrates voice command processing with backend API functions to provide recipe
 NEUPHONIC_API_KEY = "d5a15d9bb926ebc552705ff41e1734262dc253e6dcdccefc20a83fcaa9701437.a0a43122-59b6-46c8-9a30-7db061e00632"
 
 
-from voice_module import process_input, text_to_speech, test_agent
+from voice_module import process_user_request
 import asyncio
 import websockets
 from pyneuphonic.player import AudioPlayer
@@ -74,11 +74,11 @@ async def main():
         if user_text.lower() == 'quit':
             break
         
-        text_response = process_input(user_text)
+        text_response = process_user_request(user_text)
 
         await ws.send(text_response, autocomplete=True)
 
-        time.sleep(5)
+        time.sleep(10)
 
     await ws.close()  # close the websocket and terminate the audio resources
 
