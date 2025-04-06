@@ -2,3 +2,10 @@ allocation_per_stock / price
 500 / 100 = 5 shares
 
 (budget - spent) / price - gets allocation that doesnt go over budget
+
+investment period 
+age 
+hobbies
+avoids
+
+ example: budget=20312, age=32, investment_period = 365, hobbies = [gardening], avoids = [Trade and Services, Real Estate, Construction]
