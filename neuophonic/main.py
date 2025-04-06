@@ -13,6 +13,7 @@ from pyneuphonic import Neuphonic, WebsocketEvents, Agent
 from pyneuphonic.models import APIResponse, TTSResponse
 from pyneuphonic.models import APIResponse, AgentResponse
 import aioconsole
+import time
 
 async def get_user_audio_as_text(client, agent_id):
     user_input = None
@@ -44,7 +45,7 @@ async def main():
 
     client = Neuphonic(api_key=NEUPHONIC_API_KEY)
 
-    agent_id_1 = client.agents.create(name='Agent 1',prompt='You are a friendly assistant.',  greeting='Hello').data['agent_id']
+    agent_id_1 = client.agents.create(name='Agent 1',prompt='You are a friendly assistant.',  greeting='').data['agent_id']
     agent_id_2 = client.agents.create(name='Agent 2',prompt='You are a friendly assistant.',  greeting='').data['agent_id']
 
     ws = client.tts.AsyncWebsocketClient()
@@ -76,6 +77,8 @@ async def main():
         text_response = process_input(user_text)
 
         await ws.send(text_response, autocomplete=True)
+
+        time.sleep(5)
 
     await ws.close()  # close the websocket and terminate the audio resources
 
